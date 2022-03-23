@@ -6,6 +6,7 @@
 static const std::string stringifiedKernels =
 #include "global_bandwidth_kernels.cl"
 #include "compute_sp_kernels.cl"
+//#include "compute_sp_kernels_xyz.cl"
 #include "compute_hp_kernels.cl"
 #include "compute_dp_kernels.cl"
 #include "compute_int24_kernels.cl"
@@ -82,6 +83,13 @@ int clPeak::runAll()
         log->print(" (" OS_NAME ")" NEWLINE);
         log->print(TAB TAB "Compute units   : ");
         log->print(devInfo.numCUs);
+
+        //add ---
+        log->print(TAB TAB "WorkGroups Per CU : ");
+        log->print(devInfo.computeWgsPerCU);
+        log->print(TAB TAB "Max WorkGroup Size : ");
+        log->print(devInfo.maxWGSize);
+
         log->print(NEWLINE);
         log->print(TAB TAB "Clock frequency : ");
         log->print(devInfo.maxClockFreq);

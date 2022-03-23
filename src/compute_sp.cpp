@@ -19,14 +19,15 @@ int clPeak::runComputeSP(cl::CommandQueue &queue, cl::Program &prog, device_info
 
     cl::Context ctx = queue.getInfo<CL_QUEUE_CONTEXT>();
 
+    // globalWIs = 28 * 2048 * 256 =  14680064( !!! Limiting max work-group size to 256)
     uint64_t globalWIs = (devInfo.numCUs) * (devInfo.computeWgsPerCU) * (devInfo.maxWGSize);
     uint64_t t = std::min((globalWIs * sizeof(cl_float)), devInfo.maxAllocSize) / sizeof(cl_float);
     globalWIs = roundToMultipleOf(t, devInfo.maxWGSize);
 
     cl::Buffer outputBuf = cl::Buffer(ctx, CL_MEM_WRITE_ONLY, (globalWIs * sizeof(cl_float)));
 
-    globalSize = globalWIs;
-    localSize = devInfo.maxWGSize;
+    globalSize = globalWIs; // 14680064 
+    localSize = devInfo.maxWGSize; // 256
 
     cl::Kernel kernel_v1(prog, "compute_sp_v1");
     kernel_v1.setArg(0, outputBuf), kernel_v1.setArg(1, A);
@@ -45,14 +46,27 @@ int clPeak::runComputeSP(cl::CommandQueue &queue, cl::Program &prog, device_info
 
     ///////////////////////////////////////////////////////////////////////////
     // Vector width 1
-    log->print(TAB TAB TAB "float   : ");
+    
 
+    log->print(TAB TAB TAB "  --compute-float-count   : ");
+    log->print(static_cast<float>(globalWIs));
+    log->print(NEWLINE);
+    
+
+    
+    /// it is : 2 *   128 Loop * mad_16  = 4096
     workPerWI = 4096; // Indicates flops executed per work-item
 
     timed = run_kernel(queue, kernel_v1, globalSize, localSize, iters);
 
+    log->print(TAB TAB TAB "  --time-elapsed   : ");
+    log->print(timed);
+    log->print(NEWLINE);
+
+    /// data compute count / time= 14680064*4096 / time
     gflops = (static_cast<float>(globalWIs) * static_cast<float>(workPerWI)) / timed / 1e3f;
 
+    log->print(TAB TAB TAB "float   : ");
     log->print(gflops);
     log->print(NEWLINE);
     log->xmlRecord("float", gflops);
